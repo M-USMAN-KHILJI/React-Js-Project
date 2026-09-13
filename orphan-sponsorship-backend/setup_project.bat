@@ -1,41 +1,33 @@
 @echo off
 REM ============================================================
-REM OESTS one-click setup for a new laptop (Windows)
-REM Prerequisites: Python 3.12+, PostgreSQL running on port 5432
+REM Backend-only setup (creates DB + all tables + demo data)
+REM Pass credentials as args OR answer the prompts.
+REM
+REM Example:
+REM   setup_project.bat --db-name orphan_dbase --db-user postgres --db-password mypass --db-host localhost --db-port 5432
 REM ============================================================
 
 cd /d "%~dp0"
 
 echo.
-echo [1/5] Creating virtual environment (if missing)...
+echo [setup] Orphan Sponsorship backend
+echo.
+
 if not exist "venv\Scripts\python.exe" (
+  echo Creating virtual environment...
   py -3.12 -m venv venv 2>nul || python -m venv venv
 )
 
-echo [2/5] Installing Python packages...
 call venv\Scripts\activate.bat
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-
-echo [3/5] Creating PostgreSQL database from .env (if needed)...
-python create_db.py
-
-echo [4/5] Running migrations (creates all tables)...
-python manage.py migrate
-
-echo [5/5] Seeding demo users and sample records...
-python manage.py seed_demo_data
+python setup_from_credentials.py %*
+if errorlevel 1 (
+  echo Setup failed.
+  pause
+  exit /b 1
+)
 
 echo.
-echo ============================================================
-echo Setup complete.
+echo Start backend with:
+echo   venv\Scripts\python.exe manage.py runserver
 echo.
-echo Start backend:  venv\Scripts\python.exe manage.py runserver
-echo Start frontend: cd ..\orphan-sponsorship-frontend ^&^& npm install ^&^& npm run dev
-echo.
-echo Admin login: admin@gmail.com / admin@123
-echo Donor login: donor1@gmail.com / Donor@123
-echo School login: school1@gmail.com / School@123
-echo Guardian login: guardian1@gmail.com / Guardian@123
-echo ============================================================
 pause

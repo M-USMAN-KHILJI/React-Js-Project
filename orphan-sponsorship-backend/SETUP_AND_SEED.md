@@ -2,49 +2,53 @@
 
 This project uses **one PostgreSQL database** with multiple **tables**.
 
-Your `.env` currently points to:
+For the full friend/Antigravity guide, see **`FRIEND_SETUP.md`** in the project root.
 
-```env
-DB_NAME=orphan_dbase
-DB_USER=postgres
-DB_PASSWORD=your_postgres_password
-DB_HOST=localhost
-DB_PORT=5432
+## Quick setup (credentials → DB → tables → demo data)
+
+```bat
+cd orphan-sponsorship-backend
+python setup_from_credentials.py --db-name orphan_dbase --db-user postgres --db-password YOUR_PASSWORD --db-host localhost --db-port 5432
 ```
 
-## Quick setup on a new computer
-
-### 1. Install prerequisites
-- Python 3.12+
-- PostgreSQL (running on port 5432)
-- Node.js 18+
-
-### 2. Backend (creates DB + tables + demo data)
+Or interactive:
 
 ```bat
 cd orphan-sponsorship-backend
 setup_project.bat
 ```
 
-Or manually:
+Or full project (backend + frontend npm install):
 
 ```bat
-cd orphan-sponsorship-backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python create_db.py
-python manage.py migrate
-python manage.py seed_demo_data
-python manage.py runserver
+setup_all.bat
 ```
 
-### 3. Frontend
+This will:
+1. Write `.env` with your Postgres credentials
+2. Create the database if it does not exist
+3. Run `migrate` (create all tables)
+4. Run `seed_demo_data` (demo users and sample records)
+
+## Prerequisites
+- Python 3.12+
+- PostgreSQL (running)
+- Node.js 18+ (for frontend)
+
+## Frontend
 
 ```bat
 cd orphan-sponsorship-frontend
 npm install
 npm run dev
+```
+
+Backend:
+
+```bat
+cd orphan-sponsorship-backend
+venv\Scripts\activate
+python manage.py runserver
 ```
 
 ## Demo accounts created by seeder
@@ -81,3 +85,4 @@ python manage.py seed_demo_data --flush-demo
 - School account **full name** must match orphan `school_name_text` for school portal students to appear.
 - Homepage featured orphans and stats load from public APIs (no login required).
 - Contact, Feedback, and Newsletter forms save to PostgreSQL.
+- Do not commit your real `.env` file.
