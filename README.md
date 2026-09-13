@@ -2,6 +2,14 @@
 
 Full-stack demo: **React (Vite) frontend** + **Django REST backend** + **PostgreSQL**.
 
+## Documents
+
+| File | What it explains |
+|------|------------------|
+| **[PROJECT_CHANGES.md](PROJECT_CHANGES.md)** | All project changes in simple language |
+| **[FRIEND_SETUP.md](FRIEND_SETUP.md)** | How a friend sets up DB + runs the app (Antigravity prompt) |
+| **[WEBSITE_CHANGES.md](WEBSITE_CHANGES.md)** | UI polish details |
+
 ## Quick start for a friend (ZIP / clone)
 
 1. Install Python 3.12+, PostgreSQL, and Node.js 18+
