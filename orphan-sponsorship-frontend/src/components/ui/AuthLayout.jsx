@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { GraduationCap, ShieldCheck, HeartHandshake, TrendingUp, ArrowLeft } from 'lucide-react'
 
 const highlights = [
@@ -19,7 +19,17 @@ const highlights = [
   },
 ]
 
-export default function AuthLayout({ title, subtitle, children, footer }) {
+export default function AuthLayout({
+  title,
+  subtitle,
+  children,
+  footer,
+  beside,
+  backTo = '/',
+  backLabel = 'Back to home',
+}) {
+  const location = useLocation()
+
   return (
     <div className="relative flex min-h-screen">
       {/* Soft page atmosphere */}
@@ -28,11 +38,18 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
 
       {/* Brand panel */}
       <aside className="relative z-10 hidden w-[46%] flex-col justify-between overflow-hidden bg-nude-800 px-10 py-10 text-nude-50 lg:flex xl:px-14">
-        <div className="pointer-events-none absolute -right-16 top-20 h-64 w-64 rounded-full bg-gold-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-10 bottom-10 h-72 w-72 rounded-full bg-nude-600/40 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 top-20 h-64 w-64 animate-auth-glow rounded-full bg-gold-500/10 blur-3xl" />
+        <div
+          className="pointer-events-none absolute -left-10 bottom-10 h-72 w-72 animate-auth-glow rounded-full bg-nude-600/40 blur-3xl"
+          style={{ animationDelay: '1.2s' }}
+        />
 
-        <div className="relative">
-          <Link to="/" className="inline-flex items-center gap-3">
+        <div key={location.pathname} className="relative">
+          <Link
+            to="/"
+            className="inline-flex animate-auth-slide-left items-center gap-3"
+            style={{ animationDelay: '80ms' }}
+          >
             <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-nude-900 ring-1 ring-gold-500/50">
               <GraduationCap size={24} className="text-gold-400" />
             </span>
@@ -42,22 +59,34 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             </div>
           </Link>
 
-          <h2 className="mt-14 max-w-md text-3xl font-bold leading-tight tracking-tight xl:text-4xl">
-            Transparent education sponsorship for orphan children
+          <h2
+            className="mt-14 max-w-md animate-auth-slide-left text-3xl font-bold leading-tight tracking-tight xl:text-4xl"
+            style={{ animationDelay: '200ms' }}
+          >
+            <span className="bg-[linear-gradient(110deg,#F4F6FA_35%,#D9BE82_50%,#F4F6FA_65%)] bg-[length:220%_100%] bg-clip-text text-transparent animate-auth-shimmer">
+              Transparent education sponsorship for orphan children
+            </span>
           </h2>
-          <p className="mt-4 max-w-sm text-sm leading-relaxed text-nude-300 xl:text-base">
+          <p
+            className="mt-4 max-w-sm animate-auth-slide-left text-sm leading-relaxed text-nude-300 xl:text-base"
+            style={{ animationDelay: '340ms' }}
+          >
             Connect verified orphans, partner schools, and donors on one platform — so every
             rupee reaches a real classroom.
           </p>
 
           <ul className="mt-10 space-y-5">
-            {highlights.map(({ icon: Icon, title, text }) => (
-              <li key={title} className="flex gap-3">
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-500/15 text-gold-400">
+            {highlights.map(({ icon: Icon, title: itemTitle, text }, index) => (
+              <li
+                key={itemTitle}
+                className="flex animate-auth-slide-left gap-3"
+                style={{ animationDelay: `${480 + index * 140}ms` }}
+              >
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-500/15 text-gold-400 transition-transform duration-300 hover:scale-110">
                   <Icon size={18} />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-white">{title}</p>
+                  <p className="text-sm font-semibold text-white">{itemTitle}</p>
                   <p className="mt-0.5 text-sm text-nude-300">{text}</p>
                 </div>
               </li>
@@ -65,18 +94,24 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           </ul>
         </div>
 
-        <p className="relative text-xs text-nude-400">Education · Transparency · Trust</p>
+        <p
+          key={`${location.pathname}-footer`}
+          className="relative animate-auth-slide-left text-xs text-nude-400"
+          style={{ animationDelay: '920ms' }}
+        >
+          Education · Transparency · Trust
+        </p>
       </aside>
 
       {/* Form panel */}
       <section className="relative z-10 flex flex-1 flex-col px-4 py-8 sm:px-8 lg:px-12 lg:py-10">
         <div className="mb-6 flex items-center justify-between lg:mb-8">
           <Link
-            to="/"
+            to={backTo}
             className="inline-flex items-center gap-2 text-sm font-medium text-nude-600 transition-colors hover:text-nude-900"
           >
             <ArrowLeft size={16} />
-            Back to home
+            {backLabel}
           </Link>
 
           {/* Mobile brand */}
@@ -88,8 +123,18 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
           </Link>
         </div>
 
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-          <div className="animate-fade-up rounded-2xl border border-nude-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+        <div
+          className={`mx-auto flex w-full flex-1 flex-col justify-center ${
+            beside
+              ? 'max-w-md items-center gap-5 lg:max-w-none lg:flex-row lg:items-center lg:gap-6'
+              : 'max-w-md'
+          }`}
+        >
+          <div
+            className={`animate-fade-up w-full rounded-2xl border border-nude-200/80 bg-white/90 p-6 shadow-sm backdrop-blur-sm sm:p-8  ${
+              beside ? 'max-w-md' : ''
+            }`}
+          >
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold-600">
               Secure access
             </p>
@@ -109,10 +154,24 @@ export default function AuthLayout({ title, subtitle, children, footer }) {
             )}
           </div>
 
+          {beside && (
+            <div className="animate-fade-up shrink-0" style={{ animationDelay: '120ms' }}>
+              {beside}
+            </div>
+          )}
+
+          {!beside && (
+            <p className="mt-6 text-center text-xs text-nude-400">
+              Orphan Educational Sponsorship and Tracking System
+            </p>
+          )}
+        </div>
+
+        {beside && (
           <p className="mt-6 text-center text-xs text-nude-400">
             Orphan Educational Sponsorship and Tracking System
           </p>
-        </div>
+        )}
       </section>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
@@ -6,12 +7,17 @@ import {
   HeartHandshake,
   FileBarChart2,
   MessageSquareText,
+  Mail,
   Menu,
   X,
   RefreshCw,
   Inbox,
   FileText,
   Image as ImageIcon,
+  Home,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -24,6 +30,9 @@ import {
   getAdminReports,
   getAdminDonors,
   getAdminFeedback,
+  acceptFeedback,
+  rejectFeedback,
+  getAdminContactMessages,
   getAdminNewsletter,
 } from '../services/api'
 import Button from '../components/ui/Button'
@@ -42,13 +51,30 @@ const NAV_ITEMS = [
   { id: 'reports', label: 'Student Monthly Reports', icon: FileBarChart2 },
   { id: 'schools', label: 'Schools', icon: School },
   { id: 'donors', label: 'Donors', icon: HeartHandshake },
+  { id: 'messages', label: 'User Messages', icon: Mail },
   { id: 'feedback', label: 'Website Feedback', icon: MessageSquareText },
 ]
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [section, setSection] = useState('overview')
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerMinimized, setDrawerMinimized] = useState(() => {
+    try {
+      return sessionStorage.getItem('admin_drawer_minimized') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('admin_drawer_minimized', drawerMinimized ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [drawerMinimized])
 
   const [stats, setStats] = useState(null)
   const [applications, setApplications] = useState([])
@@ -56,6 +82,7 @@ export default function AdminDashboard() {
   const [reports, setReports] = useState([])
   const [donorsData, setDonorsData] = useState({ registered: [], donations: [] })
   const [feedback, setFeedback] = useState([])
+  const [contactMessages, setContactMessages] = useState([])
   const [newsletter, setNewsletter] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -68,6 +95,7 @@ export default function AdminDashboard() {
   const [selectedReport, setSelectedReport] = useState(null)
   const [selectedDonation, setSelectedDonation] = useState(null)
   const [selectedFeedback, setSelectedFeedback] = useState(null)
+  const [selectedContactMessage, setSelectedContactMessage] = useState(null)
 
   useEffect(() => {
     loadAll()
@@ -76,7 +104,7 @@ export default function AdminDashboard() {
   async function loadAll() {
     setLoading(true)
     try {
-      const [statsRes, applicationsRes, schoolsRes, reportsRes, donorsRes, feedbackRes, newsletterRes] =
+      const [statsRes, applicationsRes, schoolsRes, reportsRes, donorsRes, feedbackRes, contactRes, newsletterRes] =
         await Promise.all([
           getDashboardStats(),
           getAdminApplications(),
@@ -84,6 +112,7 @@ export default function AdminDashboard() {
           getAdminReports(),
           getAdminDonors(),
           getAdminFeedback(),
+          getAdminContactMessages(),
           getAdminNewsletter(),
         ])
       setStats(statsRes.data)
@@ -92,6 +121,7 @@ export default function AdminDashboard() {
       setReports(reportsRes.data)
       setDonorsData(donorsRes.data)
       setFeedback(feedbackRes.data)
+      setContactMessages(contactRes.data)
       setNewsletter(newsletterRes.data)
 
       const nextAssignments = {}
@@ -181,8 +211,61 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleAcceptFeedback(id) {
+    try {
+      const response = await acceptFeedback(id)
+      setActionMessage(response.data?.message || 'Feedback accepted.')
+      setToast({
+        open: true,
+        type: 'approve',
+        message: response.data?.message || 'Feedback accepted and published.',
+      })
+      setSelectedFeedback(null)
+      loadAll()
+    } catch (err) {
+      setActionMessage(err.response?.data?.message || 'Could not accept this feedback.')
+    }
+  }
+
+  async function handleRejectFeedback(id) {
+    try {
+      const response = await rejectFeedback(id)
+      setActionMessage(response.data?.message || 'Feedback rejected.')
+      setToast({
+        open: true,
+        type: 'reject',
+        message: response.data?.message || 'Feedback rejected.',
+      })
+      setSelectedFeedback(null)
+      loadAll()
+    } catch (err) {
+      setActionMessage(err.response?.data?.message || 'Could not reject this feedback.')
+    }
+  }
+
   function selectSection(id) {
     setSection(id)
+    setDrawerOpen(false)
+  }
+
+  function handleHomeClick() {
+    setDrawerMinimized(true)
+    setDrawerOpen(false)
+    navigate('/')
+  }
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
+
+  function expandDrawer() {
+    setDrawerMinimized(false)
+    setDrawerOpen(true)
+  }
+
+  function minimizeDrawer() {
+    setDrawerMinimized(true)
     setDrawerOpen(false)
   }
 
@@ -198,8 +281,8 @@ export default function AdminDashboard() {
         onClose={() => setToast((prev) => ({ ...prev, open: false }))}
       />
 
-      <div className="flex w-full items-start border-y border-nude-200/80 bg-white">
-        {drawerOpen && (
+      <div className="flex w-full items-start border-b border-nude-200/80 bg-white">
+        {drawerOpen && !drawerMinimized && (
           <button
             type="button"
             className="fixed inset-0 z-40 bg-nude-900/45 md:hidden"
@@ -208,28 +291,93 @@ export default function AdminDashboard() {
           />
         )}
 
+        {/* Collapsed desktop rail — expand restores full drawer */}
+        {drawerMinimized && (
+          <aside className="sticky top-0 z-30 hidden h-screen w-[4.5rem] flex-col items-center gap-3 bg-gradient-to-b from-nude-900 to-[#1a2744] py-4 text-white md:flex">
+            <button
+              type="button"
+              onClick={expandDrawer}
+              className="rounded-xl bg-gold-500 p-2.5 text-nude-900 shadow-md transition hover:bg-gold-400"
+              title="Expand drawer"
+              aria-label="Expand drawer to original size"
+            >
+              <PanelLeftOpen size={20} />
+            </button>
+            <div className="mt-2 flex flex-1 flex-col items-center gap-1.5">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon
+                const active = section === item.id
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => selectSection(item.id)}
+                    title={item.label}
+                    className={`rounded-xl p-2.5 transition-all ${
+                      active
+                        ? 'bg-gold-500 text-nude-900'
+                        : 'text-white/75 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={18} />
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={handleHomeClick}
+              title="Home"
+              className="rounded-xl p-2.5 text-white/75 hover:bg-white/10 hover:text-white"
+            >
+              <Home size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Logout"
+              className="rounded-xl p-2.5 text-white/75 hover:bg-white/10 hover:text-white"
+            >
+              <LogOut size={18} />
+            </button>
+          </aside>
+        )}
+
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-gradient-to-b from-nude-900 to-[#1a2744] p-5 text-white shadow-xl transition-transform md:sticky md:top-[4.25rem] md:z-30 md:h-[calc(100vh-4.25rem)] md:w-64 md:translate-x-0 md:self-start md:shadow-none ${
-            drawerOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-gradient-to-b from-nude-900 to-[#1a2744] p-5 text-white shadow-xl transition-all duration-300 md:sticky md:top-0 md:z-30 md:h-screen md:self-start md:shadow-none ${
+            drawerMinimized
+              ? 'w-72 -translate-x-full md:hidden'
+              : `w-72 md:w-64 ${drawerOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
           }`}
         >
-          <div className="mb-8 flex items-start justify-between">
-            <div>
+          <div className="mb-6 flex items-start justify-between gap-2">
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-400">
                 Admin Panel
               </p>
-              <p className="mt-2 text-base font-semibold text-white">
+              <p className="mt-2 truncate text-base font-semibold text-white">
                 {user?.fullName || user?.full_name || 'NGO Admin'}
               </p>
               <p className="mt-0.5 text-xs text-white/55">Orphan Sponsorship System</p>
             </div>
-            <button
-              type="button"
-              className="rounded-lg p-2 text-white/70 hover:bg-white/10 md:hidden"
-              onClick={() => setDrawerOpen(false)}
-            >
-              <X size={18} />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                className="hidden rounded-lg p-2 text-white/70 hover:bg-white/10 md:inline-flex"
+                onClick={minimizeDrawer}
+                title="Minimize drawer"
+                aria-label="Minimize drawer"
+              >
+                <PanelLeftClose size={18} />
+              </button>
+              <button
+                type="button"
+                className="rounded-lg p-2 text-white/70 hover:bg-white/10 md:hidden"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <nav className="flex flex-1 flex-col gap-1.5">
@@ -253,19 +401,51 @@ export default function AdminDashboard() {
               )
             })}
           </nav>
+
+          <div className="mt-4 space-y-1.5 border-t border-white/10 pt-4">
+            <button
+              type="button"
+              onClick={handleHomeClick}
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium text-white/75 transition-all hover:bg-white/10 hover:text-white"
+            >
+              <Home size={18} />
+              <span>Home</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-sm font-medium text-white/75 transition-all hover:bg-rose-500/20 hover:text-white"
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
 
-        <div className="min-w-0 flex-1 bg-nude-50/60 md:min-h-[calc(100vh-4.25rem)]">
+        <div className="min-w-0 flex-1 bg-nude-50/60 md:min-h-screen">
           <div className="border-b border-nude-200/80 bg-white/90 px-5 pb-5 pt-8 sm:px-8 sm:pt-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-start gap-3 text-left">
                 <button
                   type="button"
                   className="mt-1 rounded-lg border border-nude-200 bg-white p-2 text-nude-700 shadow-sm md:hidden"
-                  onClick={() => setDrawerOpen(true)}
+                  onClick={() => {
+                    setDrawerMinimized(false)
+                    setDrawerOpen(true)
+                  }}
                 >
                   <Menu size={18} />
                 </button>
+                {drawerMinimized && (
+                  <button
+                    type="button"
+                    className="mt-1 hidden rounded-lg border border-nude-200 bg-white p-2 text-nude-700 shadow-sm md:inline-flex"
+                    onClick={expandDrawer}
+                    title="Expand drawer"
+                  >
+                    <PanelLeftOpen size={18} />
+                  </button>
+                )}
                 <div>
                   <h1 className="text-2xl font-semibold tracking-tight text-nude-900 md:text-3xl">
                     {sectionTitle}
@@ -322,11 +502,19 @@ export default function AdminDashboard() {
                     onOpenDonation={setSelectedDonation}
                   />
                 )}
+                {section === 'messages' && (
+                  <ContactMessagesSection
+                    messages={contactMessages}
+                    onOpenMessage={setSelectedContactMessage}
+                  />
+                )}
                 {section === 'feedback' && (
                   <FeedbackSection
                     feedback={feedback}
                     newsletter={newsletter}
                     onOpenFeedback={setSelectedFeedback}
+                    onAccept={handleAcceptFeedback}
+                    onReject={handleRejectFeedback}
                   />
                 )}
               </>
@@ -363,6 +551,15 @@ export default function AdminDashboard() {
         <FeedbackDetailModal
           feedback={selectedFeedback}
           onClose={() => setSelectedFeedback(null)}
+          onAccept={handleAcceptFeedback}
+          onReject={handleRejectFeedback}
+        />
+      )}
+
+      {selectedContactMessage && (
+        <ContactMessageDetailModal
+          message={selectedContactMessage}
+          onClose={() => setSelectedContactMessage(null)}
         />
       )}
     </div>
@@ -798,10 +995,74 @@ function DonorsSection({ registered, donations, onOpenDonation }) {
   )
 }
 
-function FeedbackSection({ feedback, newsletter, onOpenFeedback }) {
+function ContactMessagesSection({ messages, onOpenMessage }) {
   return (
     <div className="flex flex-col gap-8">
-      <SectionCard title="Website Feedback">
+      <SectionCard
+        title="User Messages"
+        action={
+          messages.length > 0 ? (
+            <span className="rounded-full bg-nude-100 px-2.5 py-1 text-xs font-semibold text-nude-600">
+              {messages.length} total
+            </span>
+          ) : null
+        }
+      >
+        {messages.length === 0 ? (
+          <EmptyState
+            title="No messages yet"
+            message="Messages sent from the Contact Us page will appear here."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="ui-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Subject</th>
+                  <th>Message</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {messages.map((m) => (
+                  <tr
+                    key={m.id}
+                    className="cursor-pointer hover:bg-nude-50"
+                    onClick={() => onOpenMessage?.(m)}
+                  >
+                    <td className="font-medium text-nude-900">{m.name}</td>
+                    <td>{m.email}</td>
+                    <td>{m.subject || '—'}</td>
+                    <td className="max-w-xl truncate">{m.message}</td>
+                    <td>{new Date(m.created_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  )
+}
+
+function FeedbackSection({ feedback, newsletter, onOpenFeedback, onAccept, onReject }) {
+  const pendingCount = feedback.filter((f) => f.status === 'Pending').length
+
+  return (
+    <div className="flex flex-col gap-8">
+      <SectionCard
+        title="Website Feedback"
+        action={
+          pendingCount > 0 ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+              {pendingCount} pending
+            </span>
+          ) : null
+        }
+      >
         {feedback.length === 0 ? (
           <EmptyState title="No feedback yet" message="Public feedback submissions will appear here." />
         ) : (
@@ -812,20 +1073,63 @@ function FeedbackSection({ feedback, newsletter, onOpenFeedback }) {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Feedback</th>
+                  <th>Status</th>
                   <th>Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {feedback.map((f) => (
-                  <tr
-                    key={f.id}
-                    className="cursor-pointer hover:bg-nude-50"
-                    onClick={() => onOpenFeedback?.(f)}
-                  >
-                    <td className="font-medium text-nude-900">{f.name || 'Anonymous'}</td>
-                    <td>{f.email || '—'}</td>
-                    <td className="max-w-xl truncate">{f.comments}</td>
+                  <tr key={f.id} className="hover:bg-nude-50">
+                    <td
+                      className="cursor-pointer font-medium text-nude-900"
+                      onClick={() => onOpenFeedback?.(f)}
+                    >
+                      {f.name || 'Anonymous'}
+                    </td>
+                    <td className="cursor-pointer" onClick={() => onOpenFeedback?.(f)}>
+                      {f.email || '—'}
+                    </td>
+                    <td
+                      className="max-w-xl cursor-pointer truncate"
+                      onClick={() => onOpenFeedback?.(f)}
+                    >
+                      {f.comments}
+                    </td>
+                    <td>
+                      <StatusBadge status={f.status || 'Pending'} />
+                    </td>
                     <td>{new Date(f.created_at).toLocaleString()}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-2">
+                        {f.status !== 'Accepted' && (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            className="!px-3 !py-1.5 text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onAccept?.(f.id)
+                            }}
+                          >
+                            Accept
+                          </Button>
+                        )}
+                        {f.status !== 'Rejected' && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="!px-3 !py-1.5 text-xs text-red-700 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onReject?.(f.id)
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1057,10 +1361,39 @@ function DonationDetailModal({ donation, onClose }) {
   )
 }
 
-function FeedbackDetailModal({ feedback, onClose }) {
+function ContactMessageDetailModal({ message, onClose }) {
+  return (
+    <ModalShell onClose={onClose} title="Contact Message">
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <DetailItem label="Name" value={message.name} />
+          <DetailItem label="Email" value={message.email} />
+          <DetailItem label="Subject" value={message.subject || '—'} />
+          <DetailItem
+            label="Submitted"
+            value={new Date(message.created_at).toLocaleString()}
+          />
+        </div>
+        <div className="rounded-xl border border-nude-100 bg-nude-50/80 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-nude-400">
+            Message
+          </p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-nude-700">
+            {message.message}
+          </p>
+        </div>
+      </div>
+    </ModalShell>
+  )
+}
+
+function FeedbackDetailModal({ feedback, onClose, onAccept, onReject }) {
   return (
     <ModalShell onClose={onClose} title="Feedback Details">
       <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={feedback.status || 'Pending'} />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <DetailItem label="Name" value={feedback.name || 'Anonymous'} />
           <DetailItem label="Email" value={feedback.email || '—'} />
@@ -1068,6 +1401,12 @@ function FeedbackDetailModal({ feedback, onClose }) {
             label="Submitted"
             value={new Date(feedback.created_at).toLocaleString()}
           />
+          {feedback.reviewed_at && (
+            <DetailItem
+              label="Reviewed"
+              value={new Date(feedback.reviewed_at).toLocaleString()}
+            />
+          )}
         </div>
         <div className="rounded-xl border border-nude-100 bg-nude-50/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-nude-400">
@@ -1076,6 +1415,24 @@ function FeedbackDetailModal({ feedback, onClose }) {
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-nude-700">
             {feedback.comments}
           </p>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2 border-t border-nude-100 pt-4">
+          {feedback.status !== 'Rejected' && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-red-700 hover:bg-red-50"
+              onClick={() => onReject?.(feedback.id)}
+            >
+              Reject
+            </Button>
+          )}
+          {feedback.status !== 'Accepted' && (
+            <Button type="button" variant="primary" onClick={() => onAccept?.(feedback.id)}>
+              Accept & Publish
+            </Button>
+          )}
         </div>
       </div>
     </ModalShell>

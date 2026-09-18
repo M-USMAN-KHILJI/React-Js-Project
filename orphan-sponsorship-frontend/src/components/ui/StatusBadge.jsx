@@ -1,6 +1,7 @@
 const styles = {
   Pending: 'bg-amber-100 text-amber-800',
   Approved: 'bg-emerald-100 text-emerald-800',
+  Accepted: 'bg-emerald-100 text-emerald-800',
   Rejected: 'bg-red-100 text-red-700',
   paid: 'bg-emerald-100 text-emerald-800',
   pending: 'bg-amber-100 text-amber-800',

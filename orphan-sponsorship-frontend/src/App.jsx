@@ -22,6 +22,7 @@ import NotFound from './pages/NotFound'
 
 const FULL_BLEED = ['/', '/about-us', '/contact-us', '/feedback']
 const FULL_WIDTH = ['/admin-dashboard']
+const HIDE_CHROME = ['/admin-dashboard']
 
 const AUTH_PATHS = [
   '/login',
@@ -40,14 +41,15 @@ function App() {
   const isAuth = isAuthRoute(pathname)
   const isFullBleed = FULL_BLEED.includes(pathname)
   const isFullWidth = FULL_WIDTH.includes(pathname)
+  const hideChrome = HIDE_CHROME.includes(pathname)
 
   return (
     <div className="flex min-h-screen flex-col bg-nude-50 font-sans text-base text-nude-900">
-      {!isAuth && <Navbar />}
+      {!isAuth && !hideChrome && <Navbar />}
 
       <main
         className={`flex-1 ${
-          isAuth
+          isAuth || hideChrome
             ? ''
             : isFullBleed
               ? ''
@@ -117,7 +119,7 @@ function App() {
         </Routes>
       </main>
 
-      {!isAuth && <Footer />}
+      {!isAuth && !hideChrome && <Footer />}
     </div>
   )
 }

@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.core.mail import send_mail
 from django.db.models import Sum
+from django.utils import timezone
 
 from orphans.models import Orphan
 from donors.models import Donation
@@ -13,9 +14,10 @@ from orphans.serializers import OrphanListSerializer
 from .serializers import (
     ContactMessageSerializer,
     FeedbackEntrySerializer,
+    PublicFeedbackSerializer,
     NewsletterSubscriberSerializer,
 )
-from .models import NewsletterSubscriber, FeedbackEntry
+from .models import NewsletterSubscriber, FeedbackEntry, ContactMessage
 
 
 class PublicStatsView(APIView):
@@ -66,18 +68,40 @@ class ContactMessageCreateView(APIView):
         return Response(serializer.errors, status=400)
 
 
+class AdminContactMessageListView(APIView):
+    """GET /api/admin/contact-messages/ -- Contact Us messages for NGO admin."""
+
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        messages = ContactMessage.objects.all().order_by('-created_at')
+        serializer = ContactMessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
 class FeedbackCreateView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = FeedbackEntrySerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(status='Pending')
             return Response(
-                {'message': 'Thank you for your feedback.'},
+                {'message': 'Thank you for your feedback. It will be reviewed by our team.'},
                 status=201,
             )
         return Response(serializer.errors, status=400)
+
+
+class PublicAcceptedFeedbackView(APIView):
+    """GET /api/public/feedback/ -- accepted feedback for the public feedback page."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        entries = FeedbackEntry.objects.filter(status='Accepted').order_by('-reviewed_at', '-created_at')
+        serializer = PublicFeedbackSerializer(entries, many=True)
+        return Response(serializer.data)
 
 
 class AdminFeedbackListView(APIView):
@@ -89,6 +113,50 @@ class AdminFeedbackListView(APIView):
         entries = FeedbackEntry.objects.all().order_by('-created_at')
         serializer = FeedbackEntrySerializer(entries, many=True)
         return Response(serializer.data)
+
+
+class AdminAcceptFeedbackView(APIView):
+    """POST /api/admin/feedback/<id>/accept/"""
+
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, feedback_id):
+        try:
+            entry = FeedbackEntry.objects.get(pk=feedback_id)
+        except FeedbackEntry.DoesNotExist:
+            return Response({'message': 'Feedback not found.'}, status=404)
+
+        entry.status = 'Accepted'
+        entry.reviewed_at = timezone.now()
+        entry.save(update_fields=['status', 'reviewed_at'])
+        return Response(
+            {
+                'message': 'Feedback accepted and will appear on the public feedback page.',
+                'feedback': FeedbackEntrySerializer(entry).data,
+            }
+        )
+
+
+class AdminRejectFeedbackView(APIView):
+    """POST /api/admin/feedback/<id>/reject/"""
+
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, feedback_id):
+        try:
+            entry = FeedbackEntry.objects.get(pk=feedback_id)
+        except FeedbackEntry.DoesNotExist:
+            return Response({'message': 'Feedback not found.'}, status=404)
+
+        entry.status = 'Rejected'
+        entry.reviewed_at = timezone.now()
+        entry.save(update_fields=['status', 'reviewed_at'])
+        return Response(
+            {
+                'message': 'Feedback rejected.',
+                'feedback': FeedbackEntrySerializer(entry).data,
+            }
+        )
 
 
 class AdminNewsletterListView(APIView):

@@ -132,7 +132,10 @@ body {
   .animate-hero-zoom,
   .animate-soft-float,
   .animate-pulse-soft,
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-auth-slide-left,
+  .animate-auth-glow,
+  .animate-auth-shimmer {
     animation: none !important;
   }
 }

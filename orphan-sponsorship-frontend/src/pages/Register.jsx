@@ -1,15 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import {
-  User,
-  Mail,
-  Lock,
-  Phone,
-  HeartHandshake,
-  School,
-  Baby,
-  ShieldCheck,
-} from 'lucide-react'
+import { User, Mail, Lock, Phone } from 'lucide-react'
 import { sendOTP } from '../services/api'
 import AuthLayout from '../components/ui/AuthLayout'
 import Button from '../components/ui/Button'
@@ -18,10 +9,10 @@ import Alert from '../components/ui/Alert'
 import { digitsOnly, isValidPhone11 } from '../utils/inputMasks'
 
 const roleOptions = [
-  { key: 'donor', label: 'Donor', icon: HeartHandshake },
-  { key: 'school', label: 'School', icon: School },
-  { key: 'orphan', label: 'Orphan / Guardian', icon: Baby },
-  { key: 'admin', label: 'NGO Admin', icon: ShieldCheck },
+  { key: 'donor', short: 'DR', label: 'Donor' },
+  { key: 'school', short: 'SC', label: 'School' },
+  { key: 'orphan', short: 'OR', label: 'Orphan' },
+  { key: 'admin', short: 'AD', label: 'NGO Admin' },
 ]
 
 function isPasswordStrong(password) {
@@ -97,10 +88,52 @@ export default function Register() {
     }
   }
 
+  const rolePicker = (
+    <div className="flex flex-col items-center gap-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-nude-500">
+        Select role
+      </p>
+      <div className="flex flex-col items-start gap-2.5">
+        {roleOptions.map(({ key, short, label }) => {
+          const selected = role === key
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setRole(key)}
+              aria-label={label}
+              aria-pressed={selected}
+              title={label}
+              className={`group relative flex h-12 items-center overflow-hidden rounded-full border transition-all duration-300 ease-out ${
+                selected
+                  ? 'border-gold-500 bg-gold-500 text-white shadow-md shadow-gold-500/25'
+                  : 'border-nude-200 bg-white text-nude-700 hover:border-gold-500/60 hover:bg-gold-500/5'
+              }`}
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center text-xs font-bold tracking-wide">
+                {short}
+              </span>
+              <span
+                className={`max-w-0 overflow-hidden whitespace-nowrap text-sm font-semibold opacity-0 transition-all duration-300 ease-out group-hover:max-w-[7.5rem] group-hover:pr-4 group-hover:opacity-100 ${
+                  selected ? 'text-white' : 'text-nude-800'
+                }`}
+              >
+                {label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   return (
     <AuthLayout
       title="Create Account"
-      subtitle="Choose your role and verify your email to get started."
+      subtitle="Choose a role on the right, then verify your email to get started."
+      beside={rolePicker}
+      backTo="/login"
+      backLabel="Back to login"
       footer={
         <>
           Already have an account?{' '}
@@ -110,24 +143,6 @@ export default function Register() {
         </>
       }
     >
-      <label className="ui-label">Select Your Role</label>
-      <div className="mb-5 grid grid-cols-2 gap-2">
-        {roleOptions.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setRole(key)}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
-              role === key
-                ? 'border-gold-500 bg-gold-500/10 text-nude-900 shadow-sm'
-                : 'border-nude-200 text-nude-600 hover:border-nude-300 hover:bg-nude-50'
-            }`}
-          >
-            <Icon size={16} className={role === key ? 'text-gold-600' : ''} /> {label}
-          </button>
-        ))}
-      </div>
-
       {error && (
         <Alert tone="error" className="mb-4">
           {error}

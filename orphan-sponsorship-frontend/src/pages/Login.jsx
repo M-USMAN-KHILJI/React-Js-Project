@@ -1,15 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  HeartHandshake,
-  School,
-  Baby,
-  ShieldCheck,
-} from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { loginUser } from '../services/api'
 import AuthLayout from '../components/ui/AuthLayout'
@@ -18,15 +9,7 @@ import Input from '../components/ui/Input'
 import Alert from '../components/ui/Alert'
 import SuccessNotification from '../components/SuccessNotification'
 
-const roleOptions = [
-  { key: 'donor', label: 'Donor', icon: HeartHandshake },
-  { key: 'school', label: 'School', icon: School },
-  { key: 'orphan', label: 'Guardian', icon: Baby },
-  { key: 'admin', label: 'Admin', icon: ShieldCheck },
-]
-
 export default function Login() {
-  const [role, setRole] = useState('donor')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -37,7 +20,7 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-    async function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     setError('')
 
@@ -48,7 +31,7 @@ export default function Login() {
 
     setLoading(true)
     try {
-      const response = await loginUser({ email, password, role })
+      const response = await loginUser({ email, password })
       const { user, token } = response.data
       login(user, token)
       setShowSuccessNotice(true)
@@ -88,89 +71,70 @@ export default function Login() {
       />
 
       <AuthLayout
-      title="Welcome Back"
-      subtitle="Sign in with your role to continue to your dashboard."
-      footer={
-        <>
-          Don&apos;t have an account?{' '}
-          <Link to="/register" className="font-semibold text-gold-600 hover:text-gold-500">
-            Create one
-          </Link>
-        </>
-      }
-    >
-      <label className="ui-label">Select Your Role</label>
-      <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {roleOptions.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setRole(key)}
-            className={`flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 text-xs font-medium transition-all ${
-              role === key
-                ? 'border-gold-500 bg-gold-500/10 text-nude-900 shadow-sm'
-                : 'border-nude-200 text-nude-600 hover:border-nude-300 hover:bg-nude-50'
-            }`}
-          >
-            <Icon size={18} className={role === key ? 'text-gold-600' : ''} />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <Alert tone="error" className="mb-4">
-          {error}
-        </Alert>
-      )}
-
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input
-          label="Email Address"
-          icon={Mail}
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-        />
-
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className="text-sm font-medium text-nude-700">Password</label>
-            <Link
-              to="/forgot-password"
-              className="text-xs font-medium text-gold-600 hover:text-gold-500"
-            >
-              Forgot password?
+        title="Welcome Back"
+        subtitle="Sign in with your email and password to continue to your dashboard."
+        footer={
+          <>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="font-semibold text-gold-600 hover:text-gold-500">
+              Create one
             </Link>
-          </div>
-          <div className="relative">
-            <Lock
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-nude-400"
-            />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="ui-input pl-9 pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-nude-400 hover:text-nude-600"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </div>
+          </>
+        }
+      >
+        {error && (
+          <Alert tone="error" className="mb-4">
+            {error}
+          </Alert>
+        )}
 
-        <Button type="submit" variant="accent" loading={loading} className="mt-1 w-full">
-          {loading ? 'Logging in...' : 'Login to Account'}
-        </Button>
-      </form>
-    </AuthLayout>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <Input
+            label="Email Address"
+            icon={Mail}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="text-sm font-medium text-nude-700">Password</label>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-gold-600 hover:text-gold-500"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <div className="relative">
+              <Lock
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-nude-400"
+              />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="ui-input pl-9 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-nude-400 hover:text-nude-600"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <Button type="submit" variant="accent" loading={loading} className="mt-1 w-full">
+            {loading ? 'Logging in...' : 'Login to Account'}
+          </Button>
+        </form>
+      </AuthLayout>
     </>
   )
 }

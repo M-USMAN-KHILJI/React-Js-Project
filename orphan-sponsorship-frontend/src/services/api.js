@@ -105,6 +105,10 @@ export function submitFeedback(data) {
   return api.post('/feedback/', data)
 }
 
+export function getPublicFeedback() {
+  return api.get('/public/feedback/')
+}
+
 export function subscribeNewsletter(email) {
   return api.post('/newsletter/subscribe/', { email })
 }
@@ -146,6 +150,18 @@ export function getAdminDonors() {
 
 export function getAdminFeedback() {
   return api.get('/admin/feedback/')
+}
+
+export function acceptFeedback(feedbackId) {
+  return api.post(`/admin/feedback/${feedbackId}/accept/`)
+}
+
+export function rejectFeedback(feedbackId) {
+  return api.post(`/admin/feedback/${feedbackId}/reject/`)
+}
+
+export function getAdminContactMessages() {
+  return api.get('/admin/contact-messages/')
 }
 
 export function getAdminNewsletter() {

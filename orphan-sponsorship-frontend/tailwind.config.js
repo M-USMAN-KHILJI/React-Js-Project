@@ -73,6 +73,18 @@ export default {
           "0%, 100%": { opacity: "0.55" },
           "50%": { opacity: "1" },
         },
+        "auth-slide-left": {
+          "0%": { opacity: "0", transform: "translateX(-40px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "auth-glow": {
+          "0%, 100%": { opacity: "0.45", transform: "scale(1)" },
+          "50%": { opacity: "0.85", transform: "scale(1.08)" },
+        },
+        "auth-shimmer": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "100% 50%" },
+        },
       },
       animation: {
         "slide-in-right": "slide-in-right 0.35s ease-out forwards",
@@ -83,6 +95,9 @@ export default {
         "hero-zoom": "hero-zoom 22s ease-out forwards",
         "soft-float": "soft-float 4.5s ease-in-out infinite",
         "pulse-soft": "pulse-soft 2.8s ease-in-out infinite",
+        "auth-slide-left": "auth-slide-left 0.7s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "auth-glow": "auth-glow 6s ease-in-out infinite",
+        "auth-shimmer": "auth-shimmer 4s linear infinite",
       },
     },
   },
